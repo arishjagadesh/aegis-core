@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aegis | Neural Gateway</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #0066cc;
+            --primary-green: #34c759;
+            --text-dark: #1d1d1f;
+            --text-muted: #86868b;
+            --bg-light: #f5f5f7;
+        }
+
+        body { 
+            background-color: var(--bg-light); 
+            display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; 
+            font-family: 'Inter', sans-serif; margin: 0;
+            color: var(--text-dark);
+        }
+
+        /* The 3D Neural Web Canvas */
+        #neural-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
+
+        /* Light Glassmorphism Card */
+        .login-card { 
+            position: relative; z-index: 10;
+            background: rgba(255, 255, 255, 0.65); 
+            backdrop-filter: saturate(180%) blur(30px);
+            -webkit-backdrop-filter: saturate(180%) blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.8); 
+            padding: 50px 40px; border-radius: 24px; width: 400px; text-align: center; 
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.05); 
+        }
+
+        /* Clean Corporate Radar */
+        .radar-box {
+            position: relative; height: 80px; width: 80px; margin: 0 auto 25px; 
+            background: rgba(255, 255, 255, 0.8); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            border: 2px solid rgba(0, 102, 204, 0.2); overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 102, 204, 0.1);
+        }
+        .radar-sweep { 
+            content: ''; position: absolute; top: 0; left: 0; width: 50%; height: 50%;
+            background: linear-gradient(45deg, rgba(0, 102, 204, 0) 0%, rgba(0, 102, 204, 0.4) 100%);
+            transform-origin: 100% 100%;
+            animation: sweep 2.5s infinite linear;
+        }
+        @keyframes sweep { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Inner Shield Icon */
+        .radar-box::after {
+            content: '🛡';
+            font-size: 32px; position: relative; z-index: 2;
+        }
+        
+        h2 { font-size: 28px; font-weight: 800; margin-bottom: 5px; letter-spacing: -0.5px; }
+        p.subtitle { color: var(--text-muted); font-size: 11px; margin-bottom: 40px; font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: 1px;}
+
+        /* Floating Input Fields - Light Mode */
+        .input-group { position: relative; margin-bottom: 25px; text-align: left; }
+        .input-label { 
+            position: absolute; top: -8px; left: 12px; background: rgba(255,255,255,0.9); 
+            padding: 0 6px; color: var(--primary-blue); font-size: 10px; 
+            font-family: 'JetBrains Mono', monospace; font-weight: 700; border-radius: 4px;
+        }
+        .input-field { 
+            background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0, 0, 0, 0.1); color: var(--text-dark); 
+            padding: 16px 15px; border-radius: 12px; width: 100%; outline: none; transition: all 0.3s ease; 
+            font-family: 'JetBrains Mono', monospace; font-size: 14px; box-sizing: border-box; letter-spacing: 1px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .input-field:focus { border-color: var(--primary-blue); box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1); background: #ffffff; }
+        .input-field::placeholder { color: #a1a1a6; }
+        
+        .login-btn { 
+            background: var(--primary-blue); color: #ffffff; width: 100%; padding: 16px; 
+            border-radius: 980px; font-weight: 600; border: none; 
+            cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; font-size: 15px;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+        }
+        .login-btn:hover { background: #005bb5; transform: scale(1.02); box-shadow: 0 6px 16px rgba(0, 102, 204, 0.4); }
+        .login-btn:disabled { background: #86868b; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        /* Secure Engine Status */
+        .system-status { margin-top: 35px; font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Inter', sans-serif; }
+        .dot { width: 8px; height: 8px; background: var(--primary-green); border-radius: 50%; box-shadow: 0 0 10px rgba(52, 199, 89, 0.6); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        
+        .glitch-error { color: #ff3b30; font-size: 12px; margin-bottom: 20px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+        
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body x-data="aegisAuth()">
+
+    <canvas id="neural-canvas"></canvas>
+
+    <div class="login-card" id="gateway-card">
+        <div class="radar-box">
+            <div class="radar-sweep"></div>
+        </div>
+        
+        <h2>Aegis Core</h2>
+        <p class="subtitle">ZERO-TRUST NEURAL GATEWAY</p>
+
+        <form @submit.prevent="authenticate">     
+            <div class="input-group">
+                <label class="input-label">OPERATOR ID</label>
+                <input type="text" class="input-field" required value="ADMIN" readonly style="color: var(--text-muted); background: rgba(245,245,247,0.8);">
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label">AUTHORIZATION CODE</label>
+                <input type="password" x-ref="pass" placeholder="••••••••" class="input-field" required>
+            </div>
+            
+            <p x-show="error" class="glitch-error" x-text="errorMessage" x-cloak></p>
+
+            <button type="submit" class="login-btn" :disabled="loading">
+                <template x-if="!loading"><span>Authenticate</span></template>
+                <template x-if="loading"><span>Verifying Parameters...</span></template>
+            </button>
+        </form>
+        
+        <div class="system-status">
+            <div class="dot"></div>
+            DeBERTa-v3 Engine Secured
+        </div>
+    </div>
+
+    <script>
+        
+        function aegisAuth() {
+            return {
+                loading: false,
+                error: false,
+                errorMessage: 'Authorization Denied.',
+                
+                async authenticate() {
+                    this.loading = true;
+                    this.error = false;
+                    const code = this.$refs.pass.value;
+                    
+                
+                    const hfSpaceUrl = "https://aj-devil-aegis-engine.hf.space/auth/call/verify";
+
+                    try {
+                        const response = await fetch(hfSpaceUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ data: [code] }) 
+                        });
+
+                        const result = await response.json();
+                        const authResponse = result.data[0];
+
+                        if (authResponse.status === "success") {
+                            localStorage.setItem('aegisAdminAuth', 'true');
+                            window.location.href = 'dash.html';
+                        } else {
+                            this.loading = false;
+                            this.error = true;
+                            this.errorMessage = authResponse.message || 'Authorization Denied.';
+                            this.$refs.pass.value = '';
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        this.loading = false;
+                        this.error = true;
+                        this.errorMessage = "Connection to Aegis Core failed.";
+                        this.$refs.pass.value = '';
+                    }
+                }
+            }
+        }
+
+        // --- 1. GSAP Drop-Down Animation ---
+        gsap.from("#gateway-card", { 
+            duration: 1.2, 
+            y: -150, 
+            opacity: 0, 
+            ease: "back.out(1.2)",
+            delay: 0.2
+        });
+
+        // --- 2. 3D Neural Agents Canvas Engine ---
+        const canvas = document.getElementById('neural-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles;
+
+        function initCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            particles = [];
+            // Create 80 neural nodes
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 1,
+                    vy: (Math.random() - 0.5) * 1,
+                    radius: Math.random() * 2 + 1
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Subtle blue tint for lines
+            ctx.strokeStyle = 'rgba(0, 102, 204, 0.1)';
+            ctx.fillStyle = 'rgba(0, 102, 204, 0.3)';
+
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Bounce off walls
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                // Draw node
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Connect nodes that are close (Creating the Neural Web)
+                for (let j = i + 1; j < particles.length; j++) {
+                    let p2 = particles[j];
+                    let dist = Math.sqrt(Math.pow(p.x - p2.x, 2) + Math.pow(p.y - p2.y, 2));
+                    
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        // Make line more transparent the further away they are
+                        ctx.strokeStyle = `rgba(0, 102, 204, ${0.15 - (dist/120)*0.15})`;
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+        animate();
+    </script>
+</body>
+</html>
